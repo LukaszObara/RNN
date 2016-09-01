@@ -211,28 +211,3 @@ class RNN(object):
 
 if __name__ == '__main__':
 	pass
-	# location = 'C:\\Users\\Lukasz Obara\\OneDrive\\Documents\\'\
-	# 			+'Machine Learning\\Text Files\\test.csv'
-	# temp = np.genfromtxt(location, delimiter=',')
-	# my_data = [np.array(arr) for arr in temp[:, :, np.newaxis]]
-
-	# n = 10
-	# sequence = [my_data[i:i+n] for i in range(0, len(my_data), n)]
-	# rnn = RNN(sequence[6], 80)
-	# print(np.argmax(sequence[6][0]))
-
-	# rnn.backward_pass(sequence[6])
-
-	# rnn = RNN(sequence[6], 120)
-	# rnn.sgd(len(sequence[6]), 20, 0.15, 0.9, learning_decay=0.0)
-	# pass
-
-	# x = [np.array([[0], [1], [0], [0]]), # The letter h 
-	# 	 np.array([[1], [0], [0], [0]]), # The letter e
-	# 	 np.array([[0], [0], [1], [0]]), # The letter l
-	# 	 np.array([[0], [0], [1], [0]]), # The letter l
-	# 	 np.array([[0], [0], [0], [1]])] # The letter e
-	# print(x[0]-x[1])
-
-	# y = [np.array([[0.43], [0.234], [0.92], [0.743]])]
-	# print(np.max(np.multiply(x[0], y)))
