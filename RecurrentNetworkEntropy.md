@@ -1,6 +1,5 @@
 # Change Log
-All notable changes to RecurrentNetworkEntropy.py project will be docu-
-mented in this file.
+All notable changes to RecurrentNetworkEntropy.py project will be documented in this file.
 
 ## [Unreleased] - 01/09/2016
 ### Added
