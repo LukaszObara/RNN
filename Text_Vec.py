@@ -25,14 +25,4 @@ class Text_Vec(object):
 		return text_list
 
 if __name__ == '__main__':
-	test = Text_Vec().convert_text('\\test.txt', save=True)
-	# print(len(test))
-	location = 'C:\\Users\\Lukasz Obara\\OneDrive\\Documents\\Machine Learning\\Text Files\\test.csv'
-	temp = np.genfromtxt(location, delimiter=',')
-	print(temp[0])
-	my_data = []
-	for i in range(len(temp)):
-		foo = np.array([temp[i]]).T
-		my_data.append(foo)
-	# print(my_data[1])
-
+	pass
