@@ -8,7 +8,7 @@ mented in this file.
 - exponential decay on update rate
 
 ### Fixed
-- removed second instance of feedforward() in sgd()
+- removed second instance of feedforward() from sgd()
 
 
 ## [Unreleased] - 31/08/2016
