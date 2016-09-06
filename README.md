@@ -1,5 +1,5 @@
 # RNN
-A simple single layer recurrent neural network for character classification. The activation between nodes utilizes the tanh function and the outputs *o<sup>(t)</sup>* are used as the argument to the softmax function to obtain the vector y of the probabilities over the output. The loss is the negative log-likelihood of the true target y^{(t)} given the inputs so far  
+A simple single layer recurrent neural network for character classification. The activation between nodes utilizes the tanh function and the outputs *o<sup>(t)</sup>* are used as the argument to the softmax function to obtain the vector *y* of the probabilities over the output. The loss is the negative log-likelihood of the true target *y<sup>(t)</sup>* given the inputs so far.  
 
 The code works by first using Tex_vec.py to convert the characters in a .txt file into a character vectors of length 127 consisting of 0 except for the coordinate associated with the ASCII representation of the character. 
 
