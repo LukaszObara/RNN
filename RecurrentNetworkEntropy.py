@@ -20,7 +20,7 @@ import numpy as np
 # User Libraries
 from Text_Vec import Text_Vec
 
-__version__ = "0.8.6"
+__version__ = "0.8.7"
 __author__ = "Lukasz Obara"
 
 # Misc functions
@@ -30,13 +30,13 @@ def softmax(z):
 	return np.exp(z) / np.sum(np.exp(z))
 
 class RNN(object):
-	def __init__(self, data, hidden_size):
+	def __init__(self, data, hidden_size, eps=.0001):
 		self.data = data
 		self.hidden_size = hidden_size 
 		self.weights_hidden = np.random.rand(hidden_size, hidden_size) * 0.1 # W
 		self.weights_input = np.random.rand(hidden_size, len(data[0])) * 0.1 # U
 		self.weights_output = np.random.rand(len(data[0]), hidden_size) * 0.1 # V 
-		self.bias_hidden = np.array([np.random.rand(hidden_size)]).T # b
+		self.bias_hidden = np.array([np.random.rand(hidden_size)]).T  # b
 		self.bias_output = np.array([np.random.rand(len(data[0]))]).T # c
 		# Initialization of hidden state for time 0. 
 		self.h_0 = np.array([np.zeros(hidden_size)]).T
@@ -45,7 +45,15 @@ class RNN(object):
 		self.weights_hidden = self.weights_hidden / largest_eig
 		self.weights_hidden = 1.01 * self.weights_hidden
 
-	def sgd(self, seq_length, epochs, eta, decay_rate, learning_decay=0.0):
+		# Initial cache values for update of RMSProp
+		self.cache_w_hid = np.zeros((hidden_size, hidden_size))  
+		self.cache_w_in = np.zeros((hidden_size, len(data[0])))
+		self.cache_w_out = np.zeros((len(data[0]), hidden_size))
+		self.cache_b_hid = np.zeros((hidden_size, 1))
+		self.cache_b_out = np.zeros((len(data[0]), 1))
+		self.eps = eps
+
+	def train(self, seq_length, epochs, eta, decay_rate=0.9, learning_decay=0.0):
 		accuracy, evaluation_cost = [], []
 
 		sequences = [self.data[i:i+seq_length] \
@@ -58,7 +66,7 @@ class RNN(object):
 				accu = 0
 				self.update(seq, epoch, eta, decay_rate, learning_decay)
 
-				final_text =  ''
+				final_text =  chr(np.argmax(seq))
 				_, outputs, loss = self.feedforward(seq)
 			
 				for j in range(len(outputs)):
@@ -73,41 +81,51 @@ class RNN(object):
 
 			print("The loss at epoch {} is: {}".format(epoch, loss))
 			print("The accuracy is {} / {}".format(accu, len(seq) - 1))
-			print(final_text)
-			print()
+			print(final_text + '\n')
 
 	def update(self, seq, epoch, eta, decay_rate, learning_decay):
 		"""Updates the network's weights and biases by applying gradient
 		descent using backpropagation through time and RMSPROP. 
 		"""
-		cache_w_hid, cache_w_in, cache_w_out = 0, 0, 0
-		cache_b_hid, cache_b_out = 0, 0
-		eps = 0.0001
+		eta = eta*np.exp(-epoch*learning_decay)
+
+		def update_rule(self, cache_attr, x_attr, dx):
+			cache = getattr(self, cache_attr)
+			cache = decay_rate * cache + (1 - decay_rate) * dx**2
+			setattr(self, cache_attr, cache)
+
+			x = getattr(self, x_attr)
+			x += - eta * dx / (np.sqrt(cache) + self.eps)
+			setattr(self, x_attr, x)
 
 		delta_nabla_c, delta_nabla_b,\
 		delta_nabla_V, delta_nabla_W, delta_nabla_U = self.backward_pass(seq)
 
-		eta = eta*np.exp(-epoch*learning_decay)
+		#RMSProp
+		update_rule('cache_w_hid', 'weights_hidden', delta_nabla_W)
+		update_rule('cache_w_in', 'weights_input', delta_nabla_U)
+		update_rule('cache_w_out', 'weights_output', delta_nabla_V)
+		update_rule('cache_b_hid', 'bias_hidden', delta_nabla_b)
+		update_rule('cache_b_out', 'bias_output', delta_nabla_c)
+		# cache_w_hid += decay_rate * cache_w_hid \
+		# 			+ (1 - decay_rate) * delta_nabla_W**2
+		# self.weights_hidden -= eta * delta_nabla_W / (np.sqrt(cache_w_hid) + eps)
 
-		cache_w_hid += decay_rate * cache_w_hid \
-					+ (1 - decay_rate) * delta_nabla_W**2
-		self.weights_hidden -= eta * delta_nabla_W / (np.sqrt(cache_w_hid) + eps)
+		# cache_w_in += decay_rate * cache_w_in \
+		# 			+ (1 - decay_rate) * delta_nabla_U**2			
+		# self.weights_input -= eta * delta_nabla_U / (np.sqrt(cache_w_in) + eps)
 
-		cache_w_in += decay_rate * cache_w_in \
-					+ (1 - decay_rate) * delta_nabla_U**2			
-		self.weights_input -= eta * delta_nabla_U / (np.sqrt(cache_w_in) + eps)
+		# cache_w_out += decay_rate * cache_w_out \
+		# 			 + (1 - decay_rate) * delta_nabla_V**2
+		# self.weights_output -= eta * delta_nabla_V / (np.sqrt(cache_w_out) + eps)
 
-		cache_w_out += decay_rate * cache_w_out \
-					 + (1 - decay_rate) * delta_nabla_V**2
-		self.weights_output -= eta * delta_nabla_V / (np.sqrt(cache_w_out) + eps)
+		# cache_b_hid += decay_rate * cache_b_hid \
+		# 			 + (1 - decay_rate) * delta_nabla_b**2
+		# self.bias_hidden -= eta * delta_nabla_b / (np.sqrt(cache_b_hid) + eps)
 
-		cache_b_hid += decay_rate * cache_b_hid \
-					 + (1 - decay_rate) * delta_nabla_b**2
-		self.bias_hidden -= eta * delta_nabla_b / (np.sqrt(cache_b_hid) + eps)
-
-		cache_b_out += decay_rate * cache_b_out \
-					 + (1 - decay_rate) * delta_nabla_c**2
-		self.bias_output -= eta * delta_nabla_c / (np.sqrt(cache_b_out) + eps)			
+		# cache_b_out += decay_rate * cache_b_out \
+		# 			 + (1 - decay_rate) * delta_nabla_c**2
+		# self.bias_output -= eta * delta_nabla_c / (np.sqrt(cache_b_out) + eps)			
 
 	def feedforward(self, sequence):
 		"""Returns a tuple `(hidden_states, output_states)` representing
@@ -151,10 +169,11 @@ class RNN(object):
 		nabla_h = np.dot(self.weights_output.T, nabla_o)
 
 		# Preliminary computations needed for hidden nodes
-		diag_tanh = np.diag(h_states[-1][:,0])
-		diag_dtanh = np.identity(self.hidden_size) - diag_tanh**2
-		nabla_temp = np.dot(diag_dtanh, nabla_h)
-		
+		# diag_tanh = np.diag(h_states[-1][:,0])
+		# diag_dtanh = np.identity(self.hidden_size) - diag_tanh**2
+		# nabla_temp = np.dot(diag_dtanh, nabla_h)
+		nabla_temp = np.multiply(1-h_states[-1]**2, nabla_h)
+
 		nabla_b = nabla_temp
 		nabla_W = np.dot(nabla_temp, h_states[-2].T)
 		nabla_U = np.dot(nabla_temp, sequence[-2].T)
@@ -181,10 +200,11 @@ class RNN(object):
 			nabla_h = np.dot(nabla_h_temp, nabla_h) \
 					+ np.dot(self.weights_output.T, nabla_o)
 
-			diag_tanh = np.diag(h_states[t][:,0])
-			diag_dtanh = np.identity(self.hidden_size) - diag_tanh**2
+			# diag_tanh = np.diag(h_states[t][:,0])
+			# diag_dtanh = np.identity(self.hidden_size) - diag_tanh**2
+			# nabla_temp = np.dot(diag_dtanh, nabla_h)
 
-			nabla_temp = np.dot(diag_dtanh, nabla_h)
+			nabla_temp = np.multiply(1-h_states[t]**2, nabla_h)
 
 			nabla_b += nabla_temp
 			nabla_W += np.dot(nabla_temp, h_states[t-1].T)
@@ -210,4 +230,26 @@ class RNN(object):
 		return (output_activation-y)
 
 if __name__ == '__main__':
-	pass
+	# pass
+	location = 'C:\\Users\\Lukasz Obara\\OneDrive\\Documents\\'\
+				+'Machine Learning\\Text Files\\test.csv'
+	temp = np.genfromtxt(location, delimiter=',')
+	my_data = [np.array(arr) for arr in temp[:, :, np.newaxis]]
+
+	n = 10
+	sequence = [my_data[i:i+n] for i in range(0, len(my_data), n)]
+	rnn = RNN(sequence[6], 120)
+	# delta_nabla_c, delta_nabla_b,\
+	# delta_nabla_V, delta_nabla_W, delta_nabla_U = rnn.backward_pass(sequence[6])
+	# print(delta_nabla_c)
+	rnn.train(len(sequence[6]), 40, 0.15, 0.9, learning_decay=0.0)
+
+	# x = [np.array([[0], [1], [0], [0]]), # The letter h 
+	# 	 np.array([[1], [0], [0], [0]]), # The letter e
+	# 	 np.array([[0], [0], [1], [0]]), # The letter l
+	# 	 np.array([[0], [0], [1], [0]]), # The letter l
+	# 	 np.array([[0], [0], [0], [1]])] # The letter e
+	# print(x[0]-x[1])
+
+	# y = [np.array([[0.43], [0.234], [0.92], [0.743]])]
+	# print(np.max(np.multiply(x[0], y)))
