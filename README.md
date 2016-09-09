@@ -7,10 +7,10 @@ Once a text file has been converted it can be processed by RNN. RNN is initializ
 
 ## How It Works
 To train the network call `train(self, seq_length, epochs, eta, decay_rate=0.9, learning_decay=0.0, randomize=False, print_final=True).`
-<b>seq_length</b>:
-<b>epochs</b>:
-<b>eta</eta>:
-<b>decay_rate</b>:
-<b>learning_decay</b>: 
-<b>randomize</b>: If set to `True` then the subsequences will be shuffle before beign processed further. The default value is set to `False`.
-<b>print_final</b>: Prints the final output at the end of evey epoch. The default value is set to `True` 
+<b>seq_length</b>: <br>
+<b>epochs</b>: <br>
+<b>eta</eta>: <br>
+<b>decay_rate</b>: <br>
+<b>learning_decay</b>: <br>
+<b>randomize</b>: If set to `True` then the subsequences will be shuffle before beign processed further. The default value is set to `False`. <br>
+<b>print_final</b>: Prints the final output at the end of evey epoch. The default value is set to `True` <br>
