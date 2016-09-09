@@ -30,7 +30,7 @@ def softmax(z):
 	return np.exp(z) / np.sum(np.exp(z))
 
 class RNN(object):
-	def __init__(self, data, hidden_size, eps=.0001):
+	def __init__(self, data, hidden_size, spec_rad = 1.01, eps=0.0001):
 		self.data = data
 		self.hidden_size = hidden_size 
 		self.weights_hidden = np.random.rand(hidden_size, hidden_size) * 0.1 # W
@@ -41,9 +41,10 @@ class RNN(object):
 		# Initialization of hidden state for time 0. 
 		self.h_0 = np.array([np.zeros(hidden_size)]).T
 
+		# Readjustment of spectral radius
 		largest_eig = max(abs(np.linalg.eigvals(self.weights_hidden)))
 		self.weights_hidden = self.weights_hidden / largest_eig
-		self.weights_hidden = 1.01 * self.weights_hidden
+		self.weights_hidden = spec_rad * self.weights_hidden
 
 		# Initial cache values for update of RMSProp
 		self.cache_w_hid = np.zeros((hidden_size, hidden_size))  
@@ -53,36 +54,47 @@ class RNN(object):
 		self.cache_b_out = np.zeros((len(data[0]), 1))
 		self.eps = eps
 
-	def train(self, seq_length, epochs, eta, decay_rate=0.9, learning_decay=0.0):
+	def train(self, seq_length, epochs, eta, decay_rate=0.9, learning_decay=0.0,
+			  print_final=True):
+	
 		accuracy, evaluation_cost = [], []
 
 		sequences = [self.data[i:i+seq_length] \
 					 for i in range(0, len(self.data), seq_length)] 
 
 		for epoch in range(epochs):
-			shuffle(sequences)
+			# shuffle(sequences)
+			print('epoch {}'.format(epoch))
+			accu = 0
+			loss = 0
 
-			for seq in sequences:
-				accu = 0
-				self.update(seq, epoch, eta, decay_rate, learning_decay)
+			for seq in sequences:				
+				for s in seq:
+					self.update(seq, epoch, eta, decay_rate, learning_decay)
 
-				final_text =  chr(np.argmax(seq))
-				_, outputs, loss = self.feedforward(seq)
+					_, outputs, loss = self.feedforward(seq)
 			
-				for j in range(len(outputs)):
-					num = np.argmax(outputs[j])
-					final_text += chr(num)
+					final_text =  chr(np.argmax(seq))
+
+					for j in range(len(outputs)):
+						num = np.argmax(outputs[j])
+						final_text += chr(num)
 
 					if num == np.argmax(seq[j+1]):
 						accu += 1
 
+				if print_final:
+					print(final_text)
+
+				loss += loss 
+
+			accuracy.append(accu)
 			evaluation_cost.append(loss)
-			accuracy.append(accu-1)
 
 			print("The loss at epoch {} is: {}".format(epoch, loss))
-			print("The accuracy is {} / {}".format(accu, len(seq) - 1))
-			print(final_text + '\n')
-
+			print("The accuracy is {} / {}".format(accu, len(self.data)))
+			print()
+ 
 	def update(self, seq, epoch, eta, decay_rate, learning_decay):
 		"""Updates the network's weights and biases by applying gradient
 		descent using backpropagation through time and RMSPROP. 
@@ -93,7 +105,7 @@ class RNN(object):
 			setattr(self, cache_attr, cache)
 
 			x = getattr(self, x_attr)
-			x += - eta * dx / (np.sqrt(cache) + self.eps)
+			x -= eta * dx / (np.sqrt(cache) + self.eps)
 			setattr(self, x_attr, x)
 
 		eta = eta*np.exp(-epoch*learning_decay)
@@ -115,7 +127,7 @@ class RNN(object):
 		hidden_states = [self.h_0]
 		output_states = []
 
-		for t in range(0, len(sequence)-1):
+		for t in range(len(sequence)-1):
 			# Since `hidden_states` includes the initialization it is 
 			# shifted to the right by 1 time step allowing us to couple
 			# the input and hidden state by `t` and not worry about 
@@ -149,9 +161,6 @@ class RNN(object):
 		nabla_h = np.dot(self.weights_output.T, nabla_o)
 
 		# Preliminary computations needed for hidden nodes
-		# diag_tanh = np.diag(h_states[-1][:,0])
-		# diag_dtanh = np.identity(self.hidden_size) - diag_tanh**2
-		# nabla_temp = np.dot(diag_dtanh, nabla_h)
 		nabla_temp = np.multiply(1-h_states[-1]**2, nabla_h)
 
 		nabla_b = nabla_temp
@@ -180,10 +189,6 @@ class RNN(object):
 			nabla_h = np.dot(nabla_h_temp, nabla_h) \
 					+ np.dot(self.weights_output.T, nabla_o)
 
-			# diag_tanh = np.diag(h_states[t][:,0])
-			# diag_dtanh = np.identity(self.hidden_size) - diag_tanh**2
-			# nabla_temp = np.dot(diag_dtanh, nabla_h)
-
 			nabla_temp = np.multiply(1-h_states[t]**2, nabla_h)
 
 			nabla_b += nabla_temp
@@ -210,4 +215,30 @@ class RNN(object):
 		return (output_activation-y)
 
 if __name__ == '__main__':
-	pass
+	# pass
+	location = 'C:\\Users\\Lukasz Obara\\OneDrive\\Documents\\'\
+				+'Machine Learning\\Text Files\\test.csv'
+	temp = np.genfromtxt(location, delimiter=',')
+	my_data = [np.array(arr) for arr in temp[:, :, np.newaxis]]
+
+	n = 20
+	sequence = [my_data[i:i+n] for i in range(0, len(my_data), n)]
+
+	rnn = RNN(sequence[6], 40)
+	rnn.train(20, 20, 0.11, 0.9, learning_decay=0.01)
+	# print(len(sequence[6]))
+	
+	# seq_length = 10
+	# temp = sequence[6]
+	# sequences = [temp[i:i+seq_length] \
+	# 			 for i in range(0, len(temp), seq_length)]
+
+	# print(len(sequences))
+	# print()
+	# z = 1
+	# for seq in sequences:
+	# 	print('starting seq {}'.format(z) )
+	# 	for t in seq:
+	# 		print(np.argmax(t))
+	# 	z += 1
+	# 	print()
