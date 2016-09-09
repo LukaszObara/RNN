@@ -8,8 +8,8 @@ All notable changes to RecurrentNetworkEntropy.py project will be documented in 
 - Ability to change spectral radius when initializing the network.
 
 ## Changed
-- Created function for update rule in update() to improve legibility. 
 - Moved caches and eps values from update() into \_\_init\_\_().
+- Created function for update rule in update() to improve legibility. 
 
 ### Fixed
 - Fixed problem where only the last sequence was being processed by the 
