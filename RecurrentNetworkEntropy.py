@@ -20,7 +20,7 @@ import numpy as np
 # User Libraries
 from Text_Vec import Text_Vec
 
-__version__ = "0.8.7"
+__version__ = "0.8.8"
 __author__ = "Lukasz Obara"
 
 # Misc functions
@@ -55,6 +55,7 @@ class RNN(object):
 		self.eps = eps
 
 	def train(self, seq_length, epochs, eta, decay_rate=0.9, learning_decay=0.0,
+			  randomize=False,
 			  print_final=True):
 	
 		accuracy, evaluation_cost = [], []
@@ -63,7 +64,9 @@ class RNN(object):
 					 for i in range(0, len(self.data), seq_length)] 
 
 		for epoch in range(epochs):
-			# shuffle(sequences)
+			if randomize:
+				shuffle(sequences)
+				
 			print('epoch {}'.format(epoch))
 			accu = 0
 			loss = 0
@@ -215,30 +218,4 @@ class RNN(object):
 		return (output_activation-y)
 
 if __name__ == '__main__':
-	# pass
-	location = 'C:\\Users\\Lukasz Obara\\OneDrive\\Documents\\'\
-				+'Machine Learning\\Text Files\\test.csv'
-	temp = np.genfromtxt(location, delimiter=',')
-	my_data = [np.array(arr) for arr in temp[:, :, np.newaxis]]
-
-	n = 20
-	sequence = [my_data[i:i+n] for i in range(0, len(my_data), n)]
-
-	rnn = RNN(sequence[6], 40)
-	rnn.train(20, 20, 0.11, 0.9, learning_decay=0.01)
-	# print(len(sequence[6]))
-	
-	# seq_length = 10
-	# temp = sequence[6]
-	# sequences = [temp[i:i+seq_length] \
-	# 			 for i in range(0, len(temp), seq_length)]
-
-	# print(len(sequences))
-	# print()
-	# z = 1
-	# for seq in sequences:
-	# 	print('starting seq {}'.format(z) )
-	# 	for t in seq:
-	# 		print(np.argmax(t))
-	# 	z += 1
-	# 	print()
+	pass
