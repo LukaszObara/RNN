@@ -1,6 +1,5 @@
 # Change Log
-All notable changes to RecurrentNetworkEntropy.py project will be docu-
-mented in this file.
+All notable changes to RecurrentNetworkEntropy.py project will be documented in this file.
 
 ## [0.8.8]
 ## Added
@@ -10,7 +9,7 @@ mented in this file.
 
 ## Changed
 - Created function for update rule in update() to improve legibility. 
-- Moved caches and eps values from update() into __init__().
+- Moved caches and eps values from update() into \_\_init\_\_().
 
 ### Fixed
 - Fixed problem where only the last sequence was being processed by the 
