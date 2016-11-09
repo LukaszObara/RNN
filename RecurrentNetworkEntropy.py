@@ -12,6 +12,7 @@ cross-entropy cost function to evaluate accuracy.
 
 #### Libraries ####
 # Standard Libraries
+import json
 from random import shuffle
 
 # Third Party Libraries
@@ -20,7 +21,7 @@ import numpy as np
 # User Libraries
 from Text_Vec import Text_Vec
 
-__version__ = "0.8.8"
+__version__ = "0.9"
 __author__ = "Lukasz Obara"
 
 # Misc functions
@@ -30,7 +31,7 @@ def softmax(z):
 	return np.exp(z) / np.sum(np.exp(z))
 
 class RNN(object):
-	def __init__(self, data, hidden_size, spec_rad = 1.01, eps=0.0001):
+	def __init__(self, data, hidden_size, spec_rad = 1.01):
 		self.data = data
 		self.hidden_size = hidden_size 
 		self.weights_hidden = np.random.rand(hidden_size, hidden_size) * 0.1 # W
@@ -52,11 +53,9 @@ class RNN(object):
 		self.cache_w_out = np.zeros((len(data[0]), hidden_size))
 		self.cache_b_hid = np.zeros((hidden_size, 1))
 		self.cache_b_out = np.zeros((len(data[0]), 1))
-		self.eps = eps
 
-	def train(self, seq_length, epochs, eta, decay_rate=0.9, learning_decay=0.0,
-			  randomize=False,
-			  print_final=True):
+	def train(self, seq_length, epochs, learning_rate=0.001, decay_rate=0.9, 
+			  eps=0.0001, annealing_rate=0, randomize=False, print_final=True):
 	
 		accuracy, evaluation_cost = [], []
 
@@ -73,7 +72,8 @@ class RNN(object):
 
 			for seq in sequences:				
 				for s in seq:
-					self.update(seq, epoch, eta, decay_rate, learning_decay)
+					self.update(seq, epoch, learning_rate, decay_rate, 
+								learning_decay)
 
 					_, outputs, loss = self.feedforward(seq)
 			
@@ -96,10 +96,12 @@ class RNN(object):
 
 			print("The loss at epoch {} is: {}".format(epoch, loss))
 			print("The accuracy is {} / {}".format(accu, len(self.data)))
-			print()
+			print('---------------')
  
-	def update(self, seq, epoch, eta, decay_rate, learning_decay):
-		"""Updates the network's weights and biases by applying gradient
+	def update(self, seq, epoch, learning_rate, decay_rate, annealing_rate, 
+			   eps):
+		"""
+		Updates the network's weights and biases by applying gradient
 		descent using backpropagation through time and RMSPROP. 
 		"""
 		def update_rule(cache_attr, x_attr, dx):
@@ -108,10 +110,10 @@ class RNN(object):
 			setattr(self, cache_attr, cache)
 
 			x = getattr(self, x_attr)
-			x -= eta * dx / (np.sqrt(cache) + self.eps)
+			x -= (eta * learning_rate) * dx / (np.sqrt(cache) + eps)
 			setattr(self, x_attr, x)
 
-		eta = eta*np.exp(-epoch*learning_decay)
+		eta = np.exp(-annealing_rate*epoch)
 
 		delta_nabla_c, delta_nabla_b,\
 		delta_nabla_V, delta_nabla_W, delta_nabla_U = self.backward_pass(seq)
@@ -123,7 +125,8 @@ class RNN(object):
 		update_rule('cache_b_out', 'bias_output', delta_nabla_c)
 
 	def feedforward(self, sequence):
-		"""Returns a tuple `(hidden_states, output_states)` representing
+		"""
+		Returns a tuple `(hidden_states, output_states)` representing
 		the hidden and output states at each time step
 		"""
 		total_loss = 0
@@ -150,7 +153,8 @@ class RNN(object):
 		return (hidden_states, output_states, total_loss)
 
 	def backward_pass(self, sequence):
-		"""Return a tuple `(nabla_c, nabla_b, nabla_V, nabla_W, nabla_U)
+		"""
+		Return a tuple `(nabla_c, nabla_b, nabla_V, nabla_W, nabla_U)
 		represeting the gradient for the cross entropy cost function. 
 		Each element in the tuple is a numpy array.  
 		"""
@@ -216,6 +220,20 @@ class RNN(object):
 		"""
 		
 		return (output_activation-y)
+
+	def save(self, filename):
+		"""
+		Save the neural network to the file ``filename``.
+		"""
+		data = {'sizes': self.sizes,
+				'weights_inp': [w.tolist() for w in self.weights_input],
+				'weights_hid': [w.tolist() for w in self.weights_hidden],
+				'weights_out': [w.tolist() for w in self.weights_output],
+				'biases_hid': [b.tolist() for b in self.bias_hidden],
+				'biases_out': [b.tolist() for b in self.bias_output]}
+		f = open(filename, "w")
+		json.dump(data, f)
+		f.close()
 
 if __name__ == '__main__':
 	pass
