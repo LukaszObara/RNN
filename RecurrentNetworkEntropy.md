@@ -1,6 +1,17 @@
 # Change Log
 All notable changes to RecurrentNetworkEntropy.py project will be documented in this file.
 
+## [0.9]
+## Added
+- Ability to save weights and biases
+
+## Changed
+- Moved eps to train() from init()
+
+## Fixed
+- Fixed mistake in regards to annealing_rate not computing the
+  correct amount. 
+
 ## [0.8.8]
 ## Added
 - Included option to show final printed text in train().
